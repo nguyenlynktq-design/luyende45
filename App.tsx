@@ -131,13 +131,11 @@ const App: React.FC = () => {
 
       const sections = examData.sections;
 
-      // Sequential image generation
+      // Instant image generation with emojis - no delays needed
       const l1Items = sections.listening?.part1?.items || [];
       for (const item of l1Items) {
         if (item.picturePrompt) {
-          setLoadingStep(`Generating icon: ${item.picturePrompt.substring(0, 20)}...`);
           item.imageUrl = await generateImage(item.picturePrompt);
-          await sleep(1500);
         }
       }
 
@@ -146,9 +144,7 @@ const App: React.FC = () => {
         const opts = item.options || [];
         for (const opt of opts) {
           if (opt.picturePrompt) {
-            setLoadingStep(`Choice icon: ${opt.picturePrompt.substring(0, 20)}...`);
             opt.imageUrl = await generateImage(opt.picturePrompt);
-            await sleep(1500);
           }
         }
       }
@@ -158,12 +154,12 @@ const App: React.FC = () => {
         const items = part?.items || [];
         for (const item of items) {
           if (item.picturePrompt) {
-            setLoadingStep(`Writing visual: ${item.picturePrompt.substring(0, 20)}...`);
             item.imageUrl = await generateImage(item.picturePrompt);
-            await sleep(1500);
           }
         }
       }
+
+      setLoadingStep("Hoàn thành! Bắt đầu bài thi...");
 
       setExam({ ...examData });
       startTimer();
@@ -187,6 +183,39 @@ const App: React.FC = () => {
       utterance.rate = 0.8;
       window.speechSynthesis.speak(utterance);
     }
+  };
+
+  // INSTANT ANSWER CHECKING - Check immediately when user selects answer
+  const checkAnswerInstantly = (feedbackKey: string, userAnswer: string, correctAnswer: string | string[], type: 'exact' | 'flexible' = 'exact') => {
+    let isCorrect = false;
+    let correctStr = '';
+
+    if (Array.isArray(correctAnswer)) {
+      const normalizedUser = userAnswer.toLowerCase().trim().replace(/[.,!?]/g, '');
+      const normalizedCorrects = correctAnswer.map(c => c.toLowerCase().trim().replace(/[.,!?]/g, ''));
+      isCorrect = normalizedCorrects.some(c =>
+        type === 'flexible' ? (normalizedUser.includes(c) || c.includes(normalizedUser)) : normalizedUser === c
+      );
+      correctStr = correctAnswer[0];
+    } else {
+      if (type === 'flexible') {
+        const normalizedUser = userAnswer.toLowerCase().trim().replace(/[.,!?]/g, '');
+        const normalizedCorrect = correctAnswer.toLowerCase().trim().replace(/[.,!?]/g, '');
+        isCorrect = normalizedUser.includes(normalizedCorrect) || normalizedCorrect.includes(normalizedUser);
+      } else {
+        isCorrect = userAnswer === correctAnswer;
+      }
+      correctStr = correctAnswer;
+    }
+
+    setFeedback(prev => ({
+      ...prev,
+      [feedbackKey]: {
+        isCorrect,
+        correctAnswer: correctStr,
+        explanation: isCorrect ? '✓ Đúng!' : `✗ Sai. Đáp án đúng: ${correctStr}`
+      }
+    }));
   };
 
   const handleSubmit = async () => {
@@ -644,6 +673,7 @@ const App: React.FC = () => {
                             const newP3 = [...answers.listening.part3];
                             newP3[qIdx] = opt.key;
                             setAnswers({ ...answers, listening: { ...answers.listening, part3: newP3 } });
+                            checkAnswerInstantly(`l3_${qIdx}`, opt.key, item.correct);
                           }}
                           className={`p-3 rounded-2xl border-4 transition-all flex flex-col items-center ${answers.listening.part3[qIdx] === opt.key ? 'border-blue-500 bg-blue-50' : 'border-gray-50 hover:border-blue-200'}`}
                         >
@@ -677,11 +707,12 @@ const App: React.FC = () => {
                         {(item.words || []).map((w: any) => (
                           <button
                             key={w.key}
-                            disabled={isSubmitted}
+                            disabled={isSubmitted || feedback[`r1_${idx}`] !== undefined}
                             onClick={() => {
                               const newP1 = [...answers.reading.part1];
                               newP1[idx] = w.key;
                               setAnswers({ ...answers, reading: { ...answers.reading, part1: newP1 } });
+                              checkAnswerInstantly(`r1_${idx}`, w.key, item.correct);
                             }}
                             className={`p-3 rounded-xl border-2 text-lg font-bold transition-all ${answers.reading.part1[idx] === w.key ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-gray-50 border-gray-100 text-gray-600 hover:border-green-300'}`}
                           >
@@ -709,11 +740,12 @@ const App: React.FC = () => {
                         {['YES', 'NO'].map(val => (
                           <button
                             key={val}
-                            disabled={isSubmitted}
+                            disabled={isSubmitted || feedback[`r1_${idx}`] !== undefined}
                             onClick={() => {
                               const newP1 = [...answers.reading.part1];
                               newP1[idx] = val;
                               setAnswers({ ...answers, reading: { ...answers.reading, part1: newP1 } });
+                              checkAnswerInstantly(`r1_${idx}`, val, item.correct);
                             }}
                             className={`px-6 py-2 rounded-full font-bold border-2 transition-all ${answers.reading.part1[idx] === val ? 'bg-green-600 text-white border-green-600' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
                           >
@@ -739,11 +771,12 @@ const App: React.FC = () => {
                           {(item.options || []).map((opt: any) => (
                             <button
                               key={opt.key}
-                              disabled={isSubmitted}
+                              disabled={isSubmitted || feedback[`r2_${idx}`] !== undefined}
                               onClick={() => {
                                 const newP2 = Array.isArray(answers.reading.part2) ? [...answers.reading.part2] : ['', '', '', ''];
                                 newP2[idx] = opt.key;
                                 setAnswers({ ...answers, reading: { ...answers.reading, part2: newP2 } });
+                                checkAnswerInstantly(`r2_${idx}`, opt.key, item.correct);
                               }}
                               className={`p-4 rounded-xl border-2 text-left transition-all ${answers.reading.part2[idx] === opt.key ? 'border-green-600 bg-green-50 text-green-800' : 'border-gray-50 text-gray-600 hover:border-green-200'}`}
                             >
@@ -808,11 +841,12 @@ const App: React.FC = () => {
                       {item.options ? (item.options || []).map((opt: any) => (
                         <button
                           key={opt.key}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted || feedback[`r3_${idx}`] !== undefined}
                           onClick={() => {
                             const newP3 = [...answers.reading.part3];
                             newP3[idx] = opt.key;
                             setAnswers({ ...answers, reading: { ...answers.reading, part3: newP3 } });
+                            checkAnswerInstantly(`r3_${idx}`, opt.key, item.correct);
                           }}
                           className={`px-8 py-3 rounded-2xl border-2 font-bold transition-all ${answers.reading.part3[idx] === opt.key ? 'bg-green-600 text-white border-green-600 shadow-lg' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-green-300'}`}
                         >
@@ -822,11 +856,12 @@ const App: React.FC = () => {
                         ['True', 'False'].map(tf => (
                           <button
                             key={tf}
-                            disabled={isSubmitted}
+                            disabled={isSubmitted || feedback[`r3_${idx}`] !== undefined}
                             onClick={() => {
                               const newP3 = [...answers.reading.part3];
                               newP3[idx] = tf;
                               setAnswers({ ...answers, reading: { ...answers.reading, part3: newP3 } });
+                              checkAnswerInstantly(`r3_${idx}`, tf, item.correct);
                             }}
                             className={`px-12 py-3 rounded-full border-2 font-black transition-all ${answers.reading.part3[idx] === tf ? 'bg-green-600 text-white border-green-600 shadow-lg' : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-green-300'}`}
                           >
