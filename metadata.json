@@ -1,0 +1,7 @@
+{
+  "name": "English Grade 4 - Semester 1 Online Exam",
+  "description": "An automated exam generation and testing platform for 4th-grade Vietnamese students, featuring Listening, Reading, and Writing sections with AI-powered content generation.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
