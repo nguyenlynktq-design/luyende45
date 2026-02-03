@@ -296,8 +296,8 @@ const getEmojiIcon = (prompt: string): string => {
 
 // Create SVG icon from emoji for consistent display
 const createEmojiSvg = (emoji: string, bgColor: string = '#E8F4FD'): string => {
-  const svg = `< svg xmlns = "http://www.w3.org/2000/svg" width = "300" height = "300" > <rect width="300" height = "300" fill = "${bgColor}" rx = "20" /> <text x="150" y = "175" font - size="120" text - anchor="middle" > ${emoji} </text></svg > `;
-  return `data: image / svg + xml; base64, ${btoa(svg)} `;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="${bgColor}" rx="20"/><text x="150" y="175" font-size="120" text-anchor="middle">${emoji}</text></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
 };
 
 // ALWAYS use emoji icons for instant loading (no slow AI image generation)

@@ -58,6 +58,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
   const [score, setScore] = useState(0);
+  const [examStarted, setExamStarted] = useState(false);
 
   // New states
   const [showSettings, setShowSettings] = useState(false);
@@ -159,10 +160,10 @@ const App: React.FC = () => {
         }
       }
 
-      setLoadingStep("Hoàn thành! Bắt đầu bài thi...");
+      setLoadingStep("Hoàn thành! Sẵn sàng làm bài...");
 
       setExam({ ...examData });
-      startTimer();
+      setExamStarted(false); // Don't start timer yet, wait for user to click Start
     } catch (error: any) {
       console.error(error);
       alert(`Exam generation failed: ${error.message || 'Unknown error'}. Please check your API key and try again.`);
@@ -528,7 +529,7 @@ const App: React.FC = () => {
           >
             {isLoading ? "Generating..." : `🚀 GENERATE GRADE ${selectedGrade} EXAM`}
           </button>
-          {exam && !isSubmitted && (
+          {exam && examStarted && !isSubmitted && (
             <div className="bg-orange-100 text-orange-700 px-8 py-4 rounded-2xl border-4 border-orange-200 font-black text-2xl shadow-inner">
               ⏱️ {formatTime(timeLeft)}
             </div>
@@ -550,7 +551,26 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {exam ? (
+      {exam && !examStarted && !isSubmitted ? (
+        <div className="w-full max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-8 text-center">
+          <div className="text-6xl mb-6">📝</div>
+          <h2 className="text-3xl font-black text-gray-800 mb-4">Đề thi đã sẵn sàng!</h2>
+          <p className="text-gray-600 mb-2">Bài thi Tiếng Anh Lớp {selectedGrade} - Học kỳ 1</p>
+          <p className="text-gray-500 mb-6">Thời gian làm bài: <span className="font-bold text-orange-600">35 phút</span></p>
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4 mb-8">
+            <p className="text-yellow-800 font-medium">⚠️ Lưu ý: Thời gian sẽ bắt đầu đếm ngược ngay khi bạn bấm nút bên dưới.</p>
+          </div>
+          <button
+            onClick={() => {
+              setExamStarted(true);
+              startTimer();
+            }}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black py-5 px-12 rounded-2xl shadow-xl transition-all text-2xl transform hover:scale-105"
+          >
+            ▶️ BẮT ĐẦU LÀM BÀI
+          </button>
+        </div>
+      ) : exam && examStarted ? (
         <main className="w-full space-y-12 pb-32">
           {/* LISTENING SECTION */}
           <Section title="PART A. LISTENING (2.5 Points)" color="blue">
