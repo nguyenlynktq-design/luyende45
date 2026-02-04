@@ -294,16 +294,25 @@ const getEmojiIcon = (prompt: string): string => {
   return '📷';
 };
 
-// Create SVG icon from emoji for consistent display
+// Create SVG icon from emoji for consistent display - use URL encoding for Unicode support
 const createEmojiSvg = (emoji: string, bgColor: string = '#E8F4FD'): string => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="${bgColor}" rx="20"/><text x="150" y="175" font-size="120" text-anchor="middle">${emoji}</text></svg>`;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+    <rect width="300" height="300" fill="${bgColor}" rx="20"/>
+    <text x="150" y="180" font-size="100" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+  </svg>`;
+  // Use encodeURIComponent for Unicode emoji support (btoa fails with Unicode)
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 };
 
 // ALWAYS use emoji icons for instant loading (no slow AI image generation)
 export const generateImage = async (prompt: string): Promise<string> => {
-  // Instant emoji icon - no API call needed
-  return createEmojiSvg(getEmojiIcon(prompt));
+  try {
+    const emoji = getEmojiIcon(prompt);
+    return createEmojiSvg(emoji);
+  } catch (e) {
+    console.error('Image generation failed:', e);
+    return createEmojiSvg('📷'); // Fallback
+  }
 };
 
 export const generateAudio = async (text: string): Promise<string | null> => {
